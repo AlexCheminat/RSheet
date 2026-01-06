@@ -1,0 +1,83 @@
+# RSheets Mark Request
+
+# Marked Questions
+
+These questions are listed in the spec, and you must fill them out
+to receive marks for the Design Questions.
+
+## Question 1:
+    i. Direct parsing: Worse. The current approach provides type safety. Direct
+    parsing would scatter validation logic throughout the codebase, making it
+    harder to maintain and test.
+
+    ii. Separate parse function: Slightly worse. A custom function would require
+    explicit naming and wouldn't integrate with Rust's parsing ecosystem.
+
+    iii. Separate structs: Worse. The current enum provides pattern matching and
+    that way all commands are handled. Separate structs would require boxing or
+    trait objects.
+
+## Question 2:
+    > Scalar - line 91
+    > Vector: - lines 130 & 138
+    > Matrix: - line 146
+
+    i. Code sharing: The range parsing is shared. The value extraction
+    (get_cell_value()) is identical for all types. Only the loop structures
+    differ. I don't think I coul've improved much, since all three collection
+    methods share the same logic.
+
+    ii. MatrixList: I would add a new CellArgument variant
+    MatrixList(Vec<Vec<Vec<CellValue>>>). In the range parser, I would check for
+    triple underscore syntax (A1_B2__C3_D4) and parse it into a list of
+    matrices. Most of the current code wouldn't need to change due to the enum
+    pattern forcing explicit handling.
+
+## Question 3:
+    i. Mutex (line 341): Arc<Mutex<Spreadsheet>> prevents data races. Without
+    Rust's ownership system, two threads could simultaneously read dependency
+    lists while a third modifies them, which would cause iterator invalidation
+    or inconsistent reads. Rust's type system ensures the lock is held during
+    all accesses.
+
+    ii. Atomic (line 340): version_counter: Arc<AtomicU64>. Without atomic
+    operations, non-atomic increments could race, two threads read version=5,
+    both increment to 6, creating duplicate versions. Rust enforces atomic
+    operations through the type system, preventing lost updates.
+
+## Question 4:
+    > Key lines: Lines 236-240 in complete_set():
+    rustif let Some(existing) = self.cells.get(&key) {
+        if existing.version > version {
+            return false;
+        }
+    }
+
+    > This checks if a newer version exists before updating. Using version
+    assignment at line 75 (fetch_add before evaluation), ensures correct
+    ordering. For example, user A gets version=1 and user B gets version=2. When
+    A's slower computation finishes and tries to write version=1, it sees
+    version=2 exists and discards the update.
+
+## Question 5:
+
+    > Line 399: Connection thread acquires lock, calls prepare_set to gather
+    dependencies and assign version, and then releases lock.
+    > Line 417: Evaluates expression without lock.
+    > Line 398: Acquires lock again, complete_set updates A1=7,
+    get_cells_to_update returns [B1, C1] in order and then releases lock.
+    > Lines 438-440: For B1 then C1, update_dependent_cell acquires lock to read
+    formula and prepare, releases lock, evaluates, then acquires lock again to
+    update cell, and releases lock.
+
+# Questions to the Marker (OPTIONAL)
+
+Remember: you don't have to fill these out; but if
+you want to get feedback on a particular element of
+your code; you can!
+
+1.
+
+2.
+
+3.
